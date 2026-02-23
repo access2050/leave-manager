@@ -336,7 +336,7 @@ el("btnReset").addEventListener("click", ()=>{
 el("btnBackup").addEventListener("click", ()=>{
   const payload = JSON.stringify(state, null, 2);
   const ts = new Date().toISOString().slice(0,10);
-  download(`연차백업_${ts}.json`, payload);
+  download(`연차관리_백업_${ts}.json`, payload);
 });
 
 el("btnRestore").addEventListener("click", ()=> el("filePicker").click());
