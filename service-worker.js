@@ -1,4 +1,4 @@
-const CACHE_NAME = "leave-pwa-v8-1";
+const CACHE_NAME = "leave-pwa-v9-combo";
 const ASSETS = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (event) => {
