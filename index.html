@@ -9,17 +9,20 @@
 <style>
 body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#F3F6FB;margin:0;padding:14px;}
 .card{background:#fff;border-radius:18px;padding:14px;margin-bottom:12px;box-shadow:0 8px 24px rgba(0,0,0,.06);}
+.big{font-size:36px;font-weight:900;color:#2563EB;}
 button{padding:10px;border-radius:12px;border:0;font-weight:700;}
 .primary{background:#2563EB;color:#fff;}
 .ghost{background:#EEF2FF;}
 .danger{background:#FEE2E2;color:#B91C1C;}
-.big{font-size:36px;font-weight:900;color:#2563EB;}
+.list{max-height:340px;overflow:auto;}
 </style>
 </head>
 <body>
+
 <div class="card">
 <div id="savedAt">미저장</div>
-<div>남은 연차: <span class="big" id="remain">0</span></div>
+<div>남은 연차</div>
+<div class="big" id="remain">0</div>
 </div>
 
 <div class="card">
@@ -35,7 +38,7 @@ button{padding:10px;border-radius:12px;border:0;font-weight:700;}
 </div>
 
 <div class="card">
-<div id="list"></div>
+<div class="list" id="list"></div>
 </div>
 
 <div class="card">
@@ -46,8 +49,7 @@ button{padding:10px;border-radius:12px;border:0;font-weight:700;}
 </div>
 
 <script>
-const VERSION="v8.2";
-const KEY="leave_v8_2";
+const KEY="leave_v8_3";
 let state={total:15,records:[],updated:null};
 
 function save(){
@@ -95,10 +97,9 @@ function del(id){
 }
 
 function backup(){
- const payload={version:VERSION,exportedAt:new Date().toISOString(),data:state};
  const today=new Date().toISOString().slice(0,10);
- const filename="연차백업_"+today+"_"+VERSION+".json";
- const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+ const filename="연차백업_"+today+".json";
+ const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
  const url=URL.createObjectURL(blob);
  const a=document.createElement("a");
  a.href=url; a.download=filename; a.click();
@@ -113,8 +114,9 @@ document.getElementById("file").addEventListener("change",e=>{
  const file=e.target.files[0];
  const reader=new FileReader();
  reader.onload=()=>{
-   const obj=JSON.parse(reader.result);
-   if(obj.data){state=obj.data; save(); render(); alert("복원 완료");}
+   state=JSON.parse(reader.result);
+   save(); render();
+   alert("복원 완료");
  };
  reader.readAsText(file);
 });
