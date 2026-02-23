@@ -1,383 +1,138 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>연차관리</title>
-<link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#3B82F6" />
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3B82F6">
 <style>
-:root{
-  --bg:#F3F6FB;
-  --surface:#FFFFFF;
-  --text:#111827;
-  --muted:#6B7280;
-  --border:rgba(17,24,39,.08);
-  --shadow:0 10px 30px rgba(17,24,39,.08);
-  --primary:#3B82F6;
-  --primaryDark:#2563EB;
-  --danger:#EF4444;
-  --dangerBg:#FEE2E2;
-  --radius:18px;
-}
-*{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;}
-body{
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  -webkit-font-smoothing:antialiased;
-  text-rendering:optimizeLegibility;
-}
-.container{max-width:460px;margin:0 auto;padding:14px 12px 18px;}
-
-.appbar{
-  position:sticky; top:0; z-index:10;
-  margin:-14px -12px 12px;
-  padding:14px 12px 12px;
-  background:linear-gradient(180deg, rgba(59,130,246,1) 0%, rgba(59,130,246,.92) 100%);
-  color:#fff;
-  border-bottom-left-radius:22px;
-  border-bottom-right-radius:22px;
-  box-shadow:0 10px 24px rgba(37,99,235,.20);
-}
-.appbar .row{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;}
-.title{font-size:18px;font-weight:800;letter-spacing:-0.3px;line-height:1.1;}
-.subtitle{margin-top:4px;font-size:12px;opacity:.9;}
-
-.card{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  box-shadow:var(--shadow);
-  padding:14px;
-}
-.gap{height:12px;}
-
-.kpi{display:flex;align-items:center;justify-content:space-between;gap:12px;}
-.kpi .left .label{font-size:13px;color:var(--muted);font-weight:800;}
-.kpi .left .value{margin-top:6px;font-size:18px;font-weight:900;}
-.kpi .right{display:flex;align-items:baseline;gap:6px;text-align:right;}
-/* ✅ 1번 UI 기본 + 숫자만 2번처럼 크게 */
-.kpi .right .big{font-size:52px;font-weight:950;color:var(--primaryDark);letter-spacing:-1.2px;line-height:1;}
-.kpi .right .unit{font-size:15px;font-weight:900;color:var(--primaryDark);opacity:.92;}
-
-.formGrid{display:grid;grid-template-columns:1fr;gap:10px;}
-.field label{display:block;font-size:12px;color:var(--muted);font-weight:900;margin-bottom:6px;}
-.field input,.field select{
-  width:100%;
-  padding:12px 12px;
-  border-radius:14px;
-  border:1px solid var(--border);
-  background:#FAFBFF;
-  font-size:15px;
-  outline:none;
-}
-.field input:focus,.field select:focus{
-  border-color:rgba(59,130,246,.35);
-  box-shadow:0 0 0 4px rgba(59,130,246,.12);
-  background:#fff;
-}
-.btn{
-  width:100%;
-  border:0;
-  border-radius:14px;
-  padding:13px 14px;
-  font-size:15px;
-  font-weight:900;
-  cursor:pointer;
-  transition:transform .05s ease;
-}
-.btn:active{transform:scale(.99);}
-.btn.primary{background:linear-gradient(180deg, var(--primary) 0%, var(--primaryDark) 100%);color:#fff;box-shadow:0 10px 18px rgba(37,99,235,.22);}
-.btn.ghost{background:#F5F7FF;color:#111827;border:1px solid var(--border);font-weight:800;}
-.btn.danger{background:var(--dangerBg);color:#991B1B;border:1px solid rgba(239,68,68,.25);font-weight:900;}
-
-.recordsCard{padding:0;overflow:hidden;}
-.recordsHeader{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:12px 14px;border-bottom:1px solid var(--border);
-  background:rgba(255,255,255,.9);
-  backdrop-filter:saturate(180%) blur(10px);
-}
-.recordsHeader .h{font-weight:900;font-size:14px;}
-.recordsHeader .sub{font-size:12px;color:var(--muted);font-weight:800;}
+body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#F3F6FB;margin:0;padding:14px;}
+.card{background:#fff;border-radius:18px;padding:14px;margin-bottom:12px;box-shadow:0 8px 24px rgba(0,0,0,.06);}
+.big{font-size:52px;font-weight:900;color:#2563EB;}
+button{padding:12px;border-radius:12px;border:0;font-weight:800;width:100%;}
+.primary{background:#2563EB;color:#fff;}
+.ghost{background:#EEF2FF;}
+.danger{background:#FEE2E2;color:#B91C1C;}
 .list{max-height:340px;overflow:auto;}
-.item{
-  display:flex;align-items:center;justify-content:space-between;gap:10px;
-  padding:12px 14px;border-bottom:1px solid var(--border);
-}
-.item:last-child{border-bottom:0;}
-.item .meta{min-width:0;}
-.date{font-weight:900;font-size:16px;letter-spacing:-0.2px;}
-.line2{margin-top:6px;display:flex;align-items:center;gap:8px;min-width:0;}
-.chip{
-  display:inline-flex;align-items:center;
-  padding:5px 10px;border-radius:999px;
-  background:rgba(59,130,246,.10);color:#1D4ED8;
-  font-weight:900;font-size:12px;white-space:nowrap;
-}
-.memo{
-  font-size:12px;color:var(--muted);font-weight:800;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px;
-}
-.del{
-  border-radius:12px;padding:10px 12px;
-  border:1px solid rgba(239,68,68,.35);
-  background:#fff;color:var(--danger);
-  font-weight:900;cursor:pointer;
-}
-.footerBtns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
-
-@media (max-width:390px){
-  .kpi .right .big{font-size:46px;}
-  .memo{max-width:140px;}
-  .list{max-height:300px;}
-}
 </style>
 </head>
 <body>
-<div class="container">
-  <div class="appbar">
-    <div class="row">
-      <div>
-        <div class="title">연차관리</div>
-        <div class="subtitle" id="savedAt">저장: -</div>
-      </div>
-      <div style="text-align:right;font-size:12px;opacity:.92;font-weight:900;">로컬 저장</div>
-    </div>
-  </div>
 
-  <div class="card kpi">
-    <div class="left">
-      <div class="label">남은 연차</div>
-      <div class="value">총 <span id="mTotal">0</span> · 사용 <span id="mUsed">0</span></div>
-    </div>
-    <div class="right">
-      <span class="big" id="mRemain">0</span><span class="unit">개</span>
-    </div>
-  </div>
+<div class="card">
+<div id="savedAt">저장: -</div>
+<div>남은 연차</div>
+<div class="big" id="remain">0</div>
+</div>
 
-  <div class="gap"></div>
+<div class="card">
+<input type="number" id="total" placeholder="총 연차"><br><br>
+<input type="date" id="date"><br><br>
+<select id="type">
+<option value="1" data-label="연차">연차(1)</option>
+<option value="0.5" data-label="오전반차">오전반차(0.5)</option>
+<option value="0.5" data-label="오후반차">오후반차(0.5)</option>
+</select><br><br>
+<input type="text" id="memo" placeholder="메모"><br><br>
+<button class="primary" onclick="add()">기록</button>
+</div>
 
-  <div class="card">
-    <div class="formGrid">
-      <div class="field">
-        <label>총 연차 일수 설정</label>
-        <input type="number" id="totalInput" min="0" placeholder="예: 15" inputmode="decimal" />
-        <button class="btn ghost" id="btnSetTotal" style="margin-top:10px;">총 연차 적용</button>
-      </div>
-      <div class="field">
-        <label>날짜</label>
-        <input type="date" id="dateInput" />
-      </div>
-      <div class="field">
-        <label>구분</label>
-        <select id="typeInput">
-          <option value="1" data-label="연차">연차 (1)</option>
-          <option value="0.5" data-label="오전반차">오전반차 (0.5)</option>
-          <option value="0.5" data-label="오후반차">오후반차 (0.5)</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>메모</label>
-        <input type="text" id="reasonInput" maxlength="40" placeholder="메모 (사유 등) — 선택" />
-      </div>
-      <button class="btn primary" id="btnAdd">기록하기</button>
-    </div>
-  </div>
+<div class="card">
+<div class="list" id="list"></div>
+</div>
 
-  <div class="gap"></div>
-
-  <div class="card recordsCard">
-    <div class="recordsHeader">
-      <div>
-        <div class="h">기록</div>
-        <div class="sub">길어지면 목록만 스크롤</div>
-      </div>
-      <div class="sub" id="countInfo">0건</div>
-    </div>
-    <div class="list" id="records"></div>
-  </div>
-
-  <div class="gap"></div>
-
-  <div class="footerBtns">
-    <button class="btn ghost" id="btnBackup">백업</button>
-    <button class="btn ghost" id="btnRestore">복원</button>
-    <button class="btn danger" id="btnReset">초기화</button>
-  </div>
-
-  <input type="file" id="filePicker" accept="application/json" style="display:none;" />
+<div class="card">
+<button class="ghost" onclick="backup()">백업</button>
+<button class="ghost" onclick="restore()">복원</button>
+<button class="danger" onclick="resetAll()">초기화</button>
+<input type="file" id="file" style="display:none">
 </div>
 
 <script>
-const KEY = "leave_pwa_v9_combo";
-const el = (id)=>document.getElementById(id);
-
-function toNum(v){ const n = parseFloat(v); return Number.isFinite(n) ? n : 0; }
-function fmt1(n){
-  const s = (Math.round(n*10)/10).toFixed(1);
-  return s.endsWith(".0") ? s.slice(0,-2) : s;
-}
-
-let state = { total: 15, records: [], updated: null };
-
-function calcUsed(){ return state.records.reduce((sum,r)=>sum+toNum(r.amount),0); }
+const KEY="leave_final";
+let state={total:15,records:[],updated:null};
 
 function save(){
-  state.updated = new Date().toISOString();
-  localStorage.setItem(KEY, JSON.stringify(state));
-  el("savedAt").textContent = "저장: " + new Date(state.updated).toLocaleString();
+ state.updated=new Date().toISOString();
+ localStorage.setItem(KEY,JSON.stringify(state));
+ document.getElementById("savedAt").innerText="저장: "+new Date(state.updated).toLocaleString();
 }
 
 function load(){
-  try{
-    const raw = localStorage.getItem(KEY);
-    if(raw){
-      const obj = JSON.parse(raw);
-      if(obj && typeof obj === "object"){
-        state.total = toNum(obj.total);
-        state.records = Array.isArray(obj.records) ? obj.records : [];
-        state.updated = obj.updated || null;
-      }
-    }
-  }catch(e){}
+ const raw=localStorage.getItem(KEY);
+ if(raw) state=JSON.parse(raw);
 }
 
 function render(){
-  const used = calcUsed();
-  const remain = Math.max(0, toNum(state.total) - used);
-  el("mTotal").textContent = fmt1(toNum(state.total));
-  el("mUsed").textContent = fmt1(used);
-  el("mRemain").textContent = fmt1(remain);
-
-  const list = [...state.records].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
-  const recordsEl = el("records");
-  recordsEl.innerHTML = "";
-  list.forEach((r)=>{
-    const item = document.createElement("div");
-    item.className = "item";
-    const memo = (r.reason||"").trim();
-    item.innerHTML = `
-      <div class="meta">
-        <div class="date">${r.date || "-"}</div>
-        <div class="line2">
-          <span class="chip">${r.label || "연차"}</span>
-          <span class="memo" title="${memo}">${memo}</span>
-        </div>
-      </div>
-      <button class="del">삭제</button>
-    `;
-    item.querySelector(".del").addEventListener("click", ()=>{
-      state.records = state.records.filter(x=>x.id !== r.id);
-      render();
-      save();
-    });
-    recordsEl.appendChild(item);
-  });
-  el("countInfo").textContent = list.length + "건";
-
-  if(state.updated){
-    el("savedAt").textContent = "저장: " + new Date(state.updated).toLocaleString();
-  }else{
-    el("savedAt").textContent = "저장: -";
-  }
+ const used=state.records.reduce((s,r)=>s+parseFloat(r.amount),0);
+ const remain=Math.max(0,state.total-used);
+ document.getElementById("remain").innerText=remain;
+ const list=document.getElementById("list");
+ list.innerHTML="";
+ state.records.forEach(r=>{
+   const div=document.createElement("div");
+   div.innerHTML=r.date+" "+r.label+" "+(r.memo||"")+" <button onclick='del(""+r.id+"")'>삭제</button>";
+   list.appendChild(div);
+ });
 }
 
-function setDefaultDate(){
-  el("dateInput").value = new Date().toISOString().slice(0,10);
+function add(){
+ const date=document.getElementById("date").value;
+ if(!date) return alert("날짜 선택");
+ const sel=document.getElementById("type");
+ state.records.push({
+   id:Date.now()+"",
+   date,
+   amount:sel.value,
+   label:sel.options[sel.selectedIndex].getAttribute("data-label"),
+   memo:document.getElementById("memo").value
+ });
+ save(); render();
 }
 
-function download(filename, text){
-  const blob = new Blob([text], {type:"application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+function del(id){
+ state.records=state.records.filter(r=>r.id!==id);
+ save(); render();
 }
 
-el("btnSetTotal").addEventListener("click", ()=>{
-  state.total = toNum(el("totalInput").value);
+/* 🔥 최종 확정 백업 파일명 */
+function backup(){
+ const today=new Date().toISOString().slice(0,10);
+ const filename="연차관리_백업_"+today+".json";
+ const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement("a");
+ a.href=url;
+ a.download=filename;
+ a.click();
+ URL.revokeObjectURL(url);
+}
+
+function restore(){ document.getElementById("file").click(); }
+
+document.getElementById("file").addEventListener("change",e=>{
+ const file=e.target.files[0];
+ const reader=new FileReader();
+ reader.onload=()=>{
+   state=JSON.parse(reader.result);
+   save(); render();
+   alert("복원 완료");
+ };
+ reader.readAsText(file);
+});
+
+function resetAll(){
+ if(confirm("초기화?")){
+  state={total:15,records:[],updated:null};
+  localStorage.removeItem(KEY);
   render();
-  save();
-});
+ }
+}
 
-el("btnAdd").addEventListener("click", ()=>{
-  const date = el("dateInput").value;
-  if(!date){ alert("날짜를 선택하세요."); return; }
-  const typeSel = el("typeInput");
-  const amount = toNum(typeSel.value);
-  const label = typeSel.options[typeSel.selectedIndex].getAttribute("data-label") || "연차";
-  const reason = (el("reasonInput").value || "").trim();
-  const id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now()+"_"+Math.random());
-  state.records.push({ id, date, amount, label, reason });
-  el("reasonInput").value = "";
-  render();
-  save();
-});
-
-el("btnReset").addEventListener("click", ()=>{
-  if(confirm("전체 데이터를 초기화할까요?")){
-    state = { total: 15, records: [], updated: null };
-    localStorage.removeItem(KEY);
-    el("totalInput").value = 15;
-    setDefaultDate();
-    el("reasonInput").value = "";
-    render();
-  }
-});
-
-// ✅ 백업 파일명: 연차백업_YYYY-MM-DD.json
-el("btnBackup").addEventListener("click", ()=>{
-  const payload = JSON.stringify(state, null, 2);
-  const ts = new Date().toISOString().slice(0,10);
-  download(`연차관리_백업_${ts}.json`, payload);
-});
-
-el("btnRestore").addEventListener("click", ()=> el("filePicker").click());
-
-el("filePicker").addEventListener("change", (e)=>{
-  const file = e.target.files && e.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = ()=>{
-    try{
-      const obj = JSON.parse(reader.result);
-      if(!obj || typeof obj !== "object") throw new Error("invalid");
-      state.total = toNum(obj.total);
-      state.records = Array.isArray(obj.records) ? obj.records.map(r=>({
-        id: r.id || ((window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now()+"_"+Math.random())),
-        date: r.date || "",
-        amount: toNum(r.amount),
-        label: r.label || "연차",
-        reason: (r.reason||"").toString()
-      })) : [];
-      state.updated = obj.updated || null;
-      el("totalInput").value = state.total;
-      render();
-      save();
-      alert("복원 완료");
-    }catch(err){
-      alert("백업 파일 형식이 올바르지 않습니다.");
-    }finally{
-      el("filePicker").value = "";
-    }
-  };
-  reader.readAsText(file, "utf-8");
-});
-
-load();
-el("totalInput").value = state.total;
-setDefaultDate();
-render();
+load(); render();
 
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("./service-worker.js").catch(()=>{});
+ navigator.serviceWorker.register("./service-worker.js");
 }
 </script>
 </body>
