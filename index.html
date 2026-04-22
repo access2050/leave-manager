@@ -294,13 +294,24 @@ function render(){
   const list = [...state.records].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
   const recordsEl = el("records");
   recordsEl.innerHTML = "";
+  
   list.forEach((r)=>{
     const item = document.createElement("div");
     item.className = "item";
     const memo = (r.reason||"").trim();
+    
+    // [추가] 요일 계산 로직
+    let dateDisplay = r.date || "-";
+    if(r.date) {
+      const days = ['일', '월', '화', '수', '목', '금', '토'];
+      const d = new Date(r.date);
+      const dayName = days[d.getDay()];
+      dateDisplay = `${r.date}(${dayName})`; // 2026-04-22(수) 형태로 변환
+    }
+
     item.innerHTML = `
       <div class="meta">
-        <div class="date">${r.date || "-"}</div>
+        <div class="date">${dateDisplay}</div>
         <div class="line2">
           <span class="chip">${r.label || "연차"}</span>
           <span class="memo" title="${memo}">${memo}</span>
@@ -308,6 +319,7 @@ function render(){
       </div>
       <button class="del">삭제</button>
     `;
+    
     item.querySelector(".del").addEventListener("click", ()=>{
       state.records = state.records.filter(x=>x.id !== r.id);
       render();
@@ -391,7 +403,12 @@ el("btnReset").addEventListener("click", ()=>{
 
 el("btnBackup").addEventListener("click", ()=>{
   const payload = JSON.stringify(state, null, 2);
-  const ts = new Date().toISOString().slice(0,10);
+  
+  // 한국 시간 기준으로 날짜(YYYY-MM-DD) 추출
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60000;
+  const ts = new Date(now.getTime() - offset).toISOString().slice(0,10);
+  
   download(`연차관리_백업_${ts}.json`, payload);
 });
 
