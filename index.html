@@ -219,7 +219,7 @@ body{
   </div>
 
 <script>
-//  도움말 텍스트
+// 📌 도움말 텍스트
 const helpText = `• 연차 기록: 날짜와 구분(연차/반차)을 선택하고 기록하기를 누르세요.
 • 데이터 저장: 모든 기록은 브라우저(localStorage)에 자동으로 저장됩니다.
 • 백업/복원: 기기 변경 시 백업 파일을 다운로드하여 새 기기에서 복원할 수 있습니다.
@@ -230,7 +230,7 @@ const helpText = `• 연차 기록: 날짜와 구분(연차/반차)을 선택�
 브라우저 방문 기록/캐시를 삭제하면 저장된 데이터가 초기화됩니다!
 중요한 데이터는 하단 [백업] 버튼을 눌러 주기적으로 파일로 저장해 주세요.`;
 
-// [수정 및 추가 가능]  참고사항 텍스트
+// [수정 및 추가 가능] 📌 참고사항 텍스트
 const noteText = `• 근거: 근로기준법 제60조에 따른 연차 유급휴가 규정입니다.
 • 반차 사용: 오전/오후 반차는 각 0.5일로 계산됩니다.
 • 미사용 휴가: 회사 규정에 따라 보상 혹은 이월 여부를 확인하세요.
@@ -364,8 +364,8 @@ function openModal(title, content) {
 }
 
 // 버튼 이벤트 리스너
-el("btnHelp").addEventListener("click", () => openModal("도움말", helpText));
-el("btnNote").addEventListener("click", () => openModal("참고사항", noteText));
+el("btnHelp").addEventListener("click", () => openModal("📌 도움말", helpText));
+el("btnNote").addEventListener("click", () => openModal("📌 참고사항", noteText));
 
 // 모달 닫기
 el("infoModal").addEventListener("click", () => {
