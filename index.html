@@ -244,7 +244,7 @@ const helpText = `• 연차 기록: 날짜와 구분(연차/반차)을 선택�
 브라우저 방문 기록/캐시를 삭제하면 저장된 데이터가 초기화됩니다!
 중요한 데이터는 하단 [백업] 버튼을 눌러 주기적으로 파일로 저장해 주세요.`;
 
-// 참고사항 텍스트 (보내주신 내용 유지)
+// 참고사항 텍스트
 const noteText = `• 근거: 근로기준법 제60조에 따른 연차 유급휴가 규정입니다.
 • 반차 사용: 오전/오후 반차는 각 0.5일로 계산됩니다.
 • 미사용 휴가: 회사 규정에 따라 보상 혹은 이월 여부를 확인하세요.
@@ -270,25 +270,41 @@ function fmt1(n){
 
 let currentYear = new Date().getFullYear();
 
-// 연도별 총 연차(totals) 및 기록(records) 구조로 확장 (기존 단일 total 데이터 호환 가능)
 let state = {
   totals: { [currentYear]: 15 },
   records: [],
   updated: null
 };
 
+// [개선] 현재 기기의 시간을 기준으로 동적으로 연도 목록을 생성하도록 수정
 function initYearSelect(){
   const ySelect = el("yearSelect");
   ySelect.innerHTML = "";
-  const thisYear = new Date().getFullYear();
+  const baseYear = new Date().getFullYear();
   
-  for(let y = thisYear + 1; y >= thisYear - 3; y--){
+  // 저장된 기록에 존재하는 연도들도 추출하여 목록에서 누락되지 않도록 함
+  const recordYears = state.records
+    .map(r => r.date ? parseInt(r.date.slice(0, 4), 10) : null)
+    .filter(y => y && !isNaN(y));
+
+  const yearsSet = new Set([
+    baseYear + 1, // 다음 해
+    baseYear,     // 올해
+    baseYear - 1, // 작년
+    baseYear - 2, // 2년 전
+    baseYear - 3, // 3년 전
+    ...recordYears // 기존 기록에 남아있는 연도들
+  ]);
+
+  const sortedYears = Array.from(yearsSet).sort((a,b) => b - a);
+
+  sortedYears.forEach(y => {
     const opt = document.createElement("option");
     opt.value = y;
     opt.textContent = `${y}년`;
     if(y === currentYear) opt.selected = true;
     ySelect.appendChild(opt);
-  }
+  });
 }
 
 function calcUsed(year){
@@ -317,7 +333,6 @@ function load(){
     if(raw){
       const obj = JSON.parse(raw);
       if(obj && typeof obj === "object"){
-        // 기존의 단일 total 백업/저장 데이터 구조와 연도별 totals 구조 모두 하위 호환 처리
         if(obj.totals && typeof obj.totals === "object"){
           state.totals = obj.totals;
         } else if(obj.total !== undefined) {
@@ -346,7 +361,6 @@ function render(){
   el("mRemain").textContent = fmt1(remain);
   el("totalInput").value = yearTotal;
 
-  // 선택된 연도 데이터만 필터링 후 내림차순 정렬
   const list = state.records
     .filter(r => r.date && r.date.startsWith(String(year)))
     .sort((a,b)=>(b.date||"").localeCompare(a.date||""));
@@ -359,7 +373,6 @@ function render(){
     item.className = "item";
     const memo = (r.reason||"").trim();
     
-    // 요일 계산 로직
     let dateDisplay = r.date || "-";
     if(r.date) {
       const days = ['일', '월', '화', '수', '목', '금', '토'];
@@ -422,14 +435,12 @@ el("infoModal").addEventListener("click", () => {
   el("infoModal").style.display = "none";
 });
 
-// 연도 변경 이벤트
 el("yearSelect").addEventListener("change", (e)=>{
   currentYear = parseInt(e.target.value, 10);
   setDefaultDate();
   render();
 });
 
-// 선택된 연도의 총 연차 설정
 el("btnSetTotal").addEventListener("click", ()=>{
   state.totals[currentYear] = toNum(el("totalInput").value);
   render();
@@ -440,11 +451,11 @@ el("btnAdd").addEventListener("click", ()=>{
   const date = el("dateInput").value;
   if(!date){ alert("날짜를 선택하세요."); return; }
 
-  // 작성한 날짜의 연도가 현재 선택된 화면 연도와 다르면 자동 이동 확인
   const inputYear = parseInt(date.slice(0, 4), 10);
   if(inputYear !== currentYear){
     if(confirm(`선택한 날짜(${date})가 현재 선택된 연도(${currentYear}년)와 다릅니다.\n${inputYear}년 화면으로 이동하시겠습니까?`)){
       currentYear = inputYear;
+      initYearSelect();
       el("yearSelect").value = currentYear;
     }
   }
@@ -458,6 +469,7 @@ el("btnAdd").addEventListener("click", ()=>{
   state.records.push({ id, date, amount, label, reason });
 
   el("reasonInput").value = "";
+  initYearSelect();
   render();
   save();
 });
@@ -466,6 +478,7 @@ el("btnReset").addEventListener("click", ()=>{
   if(confirm("전체 연도의 모든 데이터를 초기화할까요?")){
     state = { totals: { [currentYear]: 15 }, records: [], updated: null };
     localStorage.removeItem(KEY);
+    initYearSelect();
     setDefaultDate();
     el("reasonInput").value = "";
     render();
@@ -506,6 +519,7 @@ el("filePicker").addEventListener("change", (e)=>{
       })) : [];
       
       state.updated = obj.updated || null;
+      initYearSelect();
       render();
       save(); 
       alert("복원 완료");
@@ -518,8 +532,8 @@ el("filePicker").addEventListener("change", (e)=>{
   reader.readAsText(file, "utf-8");
 });
 
-initYearSelect();
 load();
+initYearSelect();
 setDefaultDate();
 render();
 
