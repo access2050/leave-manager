@@ -276,24 +276,24 @@ let state = {
   updated: null
 };
 
-// [개선] 현재 기기의 시간을 기준으로 동적으로 연도 목록을 생성하도록 수정
+// 기본 목록은 2026년부터 구성하되, 과거/미래 데이터가 존재하면 목록에 포함시킴
 function initYearSelect(){
   const ySelect = el("yearSelect");
   ySelect.innerHTML = "";
   const baseYear = new Date().getFullYear();
-  
-  // 저장된 기록에 존재하는 연도들도 추출하여 목록에서 누락되지 않도록 함
+  const startYear = 2026;
+
+  // 기존 기록에 들어있는 모든 연도 추출
   const recordYears = state.records
     .map(r => r.date ? parseInt(r.date.slice(0, 4), 10) : null)
     .filter(y => y && !isNaN(y));
 
   const yearsSet = new Set([
-    baseYear + 1, // 다음 해
-    baseYear,     // 올해
-    baseYear - 1, // 작년
-    baseYear - 2, // 2년 전
-    baseYear - 3, // 3년 전
-    ...recordYears // 기존 기록에 남아있는 연도들
+    baseYear + 1,  // 내년
+    baseYear,      // 올해
+    startYear,     // 2026년
+    currentYear,   // 현재 선택된 연도
+    ...recordYears // 실제 기록이 존재하는 연도들 (2024년 등)
   ]);
 
   const sortedYears = Array.from(yearsSet).sort((a,b) => b - a);
@@ -393,6 +393,7 @@ function render(){
     `;
     item.querySelector(".del").addEventListener("click", ()=>{
       state.records = state.records.filter(x=>x.id !== r.id);
+      initYearSelect();
       render();
       save();
     });
@@ -452,6 +453,7 @@ el("btnAdd").addEventListener("click", ()=>{
   if(!date){ alert("날짜를 선택하세요."); return; }
 
   const inputYear = parseInt(date.slice(0, 4), 10);
+
   if(inputYear !== currentYear){
     if(confirm(`선택한 날짜(${date})가 현재 선택된 연도(${currentYear}년)와 다릅니다.\n${inputYear}년 화면으로 이동하시겠습니까?`)){
       currentYear = inputYear;
