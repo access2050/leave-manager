@@ -39,9 +39,21 @@ body{
   color:#fff;border-bottom-left-radius:22px;border-bottom-right-radius:22px;
   box-shadow:0 10px 24px rgba(37,99,235,.20);
 }
-.appbar .row{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;}
+.appbar .row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
 .title{font-size:18px;font-weight:800;letter-spacing:-0.3px;line-height:1.1;}
 .subtitle{margin-top:4px;font-size:12px;opacity:.9;}
+.year-select{
+  background:rgba(255,255,255,0.2);
+  color:#fff;
+  border:1px solid rgba(255,255,255,0.4);
+  padding:6px 10px;
+  border-radius:12px;
+  font-size:15px;
+  font-weight:900;
+  outline:none;
+}
+.year-select option{ color:#111827; background:#fff; }
+
 .card{
   background:var(--surface);
   border:1px solid var(--border);
@@ -114,7 +126,7 @@ body{
 .del{border-radius:12px;padding:10px 12px;border:1px solid rgba(239,68,68,.35);background:#fff;color:var(--danger);font-weight:900;cursor:pointer;}
 .footerBtns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
 
-/* 사용자 버튼 전용 그리드 추가 */
+/* 사용자 버튼 전용 그리드 */
 .extraBtns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
 
 .note{margin-top:8px;font-size:12px;color:var(--muted);text-align:center;font-weight:700;}
@@ -141,13 +153,16 @@ body{
           <div class="title">연차관리</div>
           <div class="subtitle" id="savedAt">미저장</div>
         </div>
-        <div style="text-align:right;font-size:12px;opacity:.92;font-weight:900;">로컬 저장</div>
+        <div>
+          <!-- 연도 선택 드롭다운 -->
+          <select id="yearSelect" class="year-select"></select>
+        </div>
       </div>
     </div>
 
     <div class="card kpi">
       <div class="left">
-        <div class="label">남은 연차</div>
+        <div class="label"><span id="kpiYear"></span> 남은 연차</div>
         <div class="value">총 <span id="mTotal">0</span> · 사용 <span id="mUsed">0</span></div>
       </div>
       <div class="right">
@@ -160,9 +175,9 @@ body{
     <div class="card">
       <div class="formGrid">
         <div class="field">
-          <label>총 연차 일수 설정</label>
+          <label><span id="formYear"></span> 총 연차 일수 설정</label>
           <input type="number" id="totalInput" min="0" placeholder="예: 15" inputmode="decimal" />
-          <button class="btn ghost" id="btnSetTotal" style="margin-top:10px;">총 연차 적용</button>
+          <button class="btn ghost" id="btnSetTotal" style="margin-top:10px;">해당 연도 총 연차 적용</button>
         </div>
 
         <div class="field">
@@ -193,8 +208,8 @@ body{
     <div class="card recordsCard">
       <div class="recordsHeader">
         <div>
-          <div class="h">기록</div>
-          <div class="sub">길어지면 목록만 스크롤</div>
+          <div class="h"><span id="listYear"></span> 내역</div>
+          <div class="sub">선택된 연도의 내역만 표시됩니다</div>
         </div>
         <div class="sub" id="countInfo">0건</div>
       </div>
@@ -211,7 +226,7 @@ body{
     <div class="footerBtns">
       <button class="btn ghost" id="btnBackup">백업</button>
       <button class="btn ghost" id="btnRestore">복원</button>
-      <button class="btn danger" id="btnReset">초기화</button>
+      <button class="btn danger" id="btnReset">전체 초기화</button>
     </div>
 
     <input type="file" id="filePicker" accept="application/json" style="display:none;" />
@@ -229,7 +244,7 @@ const helpText = `• 연차 기록: 날짜와 구분(연차/반차)을 선택�
 브라우저 방문 기록/캐시를 삭제하면 저장된 데이터가 초기화됩니다!
 중요한 데이터는 하단 [백업] 버튼을 눌러 주기적으로 파일로 저장해 주세요.`;
 
-// [수정 및 추가 가능] 참고사항 텍스트
+// 참고사항 텍스트 (보내주신 내용 유지)
 const noteText = `• 근거: 근로기준법 제60조에 따른 연차 유급휴가 규정입니다.
 • 반차 사용: 오전/오후 반차는 각 0.5일로 계산됩니다.
 • 미사용 휴가: 회사 규정에 따라 보상 혹은 이월 여부를 확인하세요.
@@ -253,10 +268,33 @@ function fmt1(n){
   return s.endsWith(".0") ? s.slice(0,-2) : s;
 }
 
-let state = { total: 15, records: [], updated: null };
+let currentYear = new Date().getFullYear();
 
-function calcUsed(){
-  return state.records.reduce((sum,r)=>sum+toNum(r.amount),0);
+// 연도별 총 연차(totals) 및 기록(records) 구조로 확장 (기존 단일 total 데이터 호환 가능)
+let state = {
+  totals: { [currentYear]: 15 },
+  records: [],
+  updated: null
+};
+
+function initYearSelect(){
+  const ySelect = el("yearSelect");
+  ySelect.innerHTML = "";
+  const thisYear = new Date().getFullYear();
+  
+  for(let y = thisYear + 1; y >= thisYear - 3; y--){
+    const opt = document.createElement("option");
+    opt.value = y;
+    opt.textContent = `${y}년`;
+    if(y === currentYear) opt.selected = true;
+    ySelect.appendChild(opt);
+  }
+}
+
+function calcUsed(year){
+  return state.records
+    .filter(r => r.date && r.date.startsWith(String(year)))
+    .reduce((sum, r) => sum + toNum(r.amount), 0);
 }
 
 function setSavedText(){
@@ -279,7 +317,12 @@ function load(){
     if(raw){
       const obj = JSON.parse(raw);
       if(obj && typeof obj === "object"){
-        state.total = toNum(obj.total);
+        // 기존의 단일 total 백업/저장 데이터 구조와 연도별 totals 구조 모두 하위 호환 처리
+        if(obj.totals && typeof obj.totals === "object"){
+          state.totals = obj.totals;
+        } else if(obj.total !== undefined) {
+          state.totals = { [currentYear]: toNum(obj.total) };
+        }
         state.records = Array.isArray(obj.records) ? obj.records : [];
         state.updated = obj.updated || null;
       }
@@ -288,14 +331,26 @@ function load(){
 }
 
 function render(){
-  const used = calcUsed();
-  const remain = Math.max(0, toNum(state.total) - used);
+  const year = currentYear;
+  
+  el("kpiYear").textContent = `${year}년`;
+  el("formYear").textContent = `${year}년`;
+  el("listYear").textContent = `${year}년`;
 
-  el("mTotal").textContent = fmt1(toNum(state.total));
+  const yearTotal = toNum(state.totals[year] !== undefined ? state.totals[year] : 15);
+  const used = calcUsed(year);
+  const remain = Math.max(0, yearTotal - used);
+
+  el("mTotal").textContent = fmt1(yearTotal);
   el("mUsed").textContent = fmt1(used);
   el("mRemain").textContent = fmt1(remain);
+  el("totalInput").value = yearTotal;
 
-  const list = [...state.records].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  // 선택된 연도 데이터만 필터링 후 내림차순 정렬
+  const list = state.records
+    .filter(r => r.date && r.date.startsWith(String(year)))
+    .sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+
   const recordsEl = el("records");
   recordsEl.innerHTML = "";
   
@@ -304,13 +359,13 @@ function render(){
     item.className = "item";
     const memo = (r.reason||"").trim();
     
-    // [추가] 요일 계산 로직
+    // 요일 계산 로직
     let dateDisplay = r.date || "-";
     if(r.date) {
       const days = ['일', '월', '화', '수', '목', '금', '토'];
       const d = new Date(r.date);
       const dayName = days[d.getDay()];
-      dateDisplay = `${r.date}(${dayName})`; // 2026-04-22(수) 형태로 변환
+      dateDisplay = `${r.date}(${dayName})`;
     }
 
     item.innerHTML = `
@@ -323,7 +378,6 @@ function render(){
       </div>
       <button class="del">삭제</button>
     `;
-    
     item.querySelector(".del").addEventListener("click", ()=>{
       state.records = state.records.filter(x=>x.id !== r.id);
       render();
@@ -337,7 +391,7 @@ function render(){
 
 function setDefaultDate(){
   const d = new Date();
-  const yyyy = d.getFullYear();
+  const yyyy = currentYear;
   const mm = String(d.getMonth()+1).padStart(2,"0");
   const dd = String(d.getDate()).padStart(2,"0");
   el("dateInput").value = `${yyyy}-${mm}-${dd}`;
@@ -355,24 +409,29 @@ function download(filename, text){
   URL.revokeObjectURL(url);
 }
 
-// 공용 모달 열기 함수
 function openModal(title, content) {
   el("modalTitle").textContent = title;
   el("modalContent").textContent = content;
   el("infoModal").style.display = "flex";
 }
 
-// 버튼 이벤트 리스너
 el("btnHelp").addEventListener("click", () => openModal("도움말", helpText));
 el("btnNote").addEventListener("click", () => openModal("참고사항", noteText));
 
-// 모달 닫기
 el("infoModal").addEventListener("click", () => {
   el("infoModal").style.display = "none";
 });
 
+// 연도 변경 이벤트
+el("yearSelect").addEventListener("change", (e)=>{
+  currentYear = parseInt(e.target.value, 10);
+  setDefaultDate();
+  render();
+});
+
+// 선택된 연도의 총 연차 설정
 el("btnSetTotal").addEventListener("click", ()=>{
-  state.total = toNum(el("totalInput").value);
+  state.totals[currentYear] = toNum(el("totalInput").value);
   render();
   save();
 });
@@ -380,6 +439,15 @@ el("btnSetTotal").addEventListener("click", ()=>{
 el("btnAdd").addEventListener("click", ()=>{
   const date = el("dateInput").value;
   if(!date){ alert("날짜를 선택하세요."); return; }
+
+  // 작성한 날짜의 연도가 현재 선택된 화면 연도와 다르면 자동 이동 확인
+  const inputYear = parseInt(date.slice(0, 4), 10);
+  if(inputYear !== currentYear){
+    if(confirm(`선택한 날짜(${date})가 현재 선택된 연도(${currentYear}년)와 다릅니다.\n${inputYear}년 화면으로 이동하시겠습니까?`)){
+      currentYear = inputYear;
+      el("yearSelect").value = currentYear;
+    }
+  }
 
   const typeSel = el("typeInput");
   const amount = toNum(typeSel.value);
@@ -395,10 +463,9 @@ el("btnAdd").addEventListener("click", ()=>{
 });
 
 el("btnReset").addEventListener("click", ()=>{
-  if(confirm("전체 데이터를 초기화할까요?")){
-    state = { total: 15, records: [], updated: null };
+  if(confirm("전체 연도의 모든 데이터를 초기화할까요?")){
+    state = { totals: { [currentYear]: 15 }, records: [], updated: null };
     localStorage.removeItem(KEY);
-    el("totalInput").value = 15;
     setDefaultDate();
     el("reasonInput").value = "";
     render();
@@ -407,12 +474,9 @@ el("btnReset").addEventListener("click", ()=>{
 
 el("btnBackup").addEventListener("click", ()=>{
   const payload = JSON.stringify(state, null, 2);
-  
-  // 한국 시간 기준으로 날짜(YYYY-MM-DD) 추출
   const now = new Date();
   const offset = now.getTimezoneOffset() * 60000;
   const ts = new Date(now.getTime() - offset).toISOString().slice(0,10);
-  
   download(`연차관리_백업_${ts}.json`, payload);
 });
 
@@ -426,7 +490,13 @@ el("filePicker").addEventListener("change", (e)=>{
     try{
       const obj = JSON.parse(reader.result);
       if(!obj || typeof obj !== "object") throw new Error("invalid");
-      state.total = toNum(obj.total);
+      
+      if(obj.totals && typeof obj.totals === "object"){
+        state.totals = obj.totals;
+      } else if(obj.total !== undefined) {
+        state.totals = { [currentYear]: toNum(obj.total) };
+      }
+
       state.records = Array.isArray(obj.records) ? obj.records.map(r=>({
         id: r.id || ((window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now()+"_"+Math.random())),
         date: r.date || "",
@@ -434,8 +504,8 @@ el("filePicker").addEventListener("change", (e)=>{
         label: r.label || "연차",
         reason: (r.reason||"").toString()
       })) : [];
+      
       state.updated = obj.updated || null;
-      el("totalInput").value = state.total;
       render();
       save(); 
       alert("복원 완료");
@@ -448,8 +518,8 @@ el("filePicker").addEventListener("change", (e)=>{
   reader.readAsText(file, "utf-8");
 });
 
+initYearSelect();
 load();
-el("totalInput").value = state.total;
 setDefaultDate();
 render();
 
